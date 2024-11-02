@@ -1,0 +1,8 @@
+{
+  "style": "style.css",
+  "left": {},
+  "center": { "clock": {} },
+  "right": {
+    "battery": { "interval": 1 }
+  }
+}
