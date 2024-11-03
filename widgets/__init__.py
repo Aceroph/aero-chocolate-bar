@@ -1,3 +1,3 @@
-import os
+from widgets import battery, clock
 
-__all__ = [f.split(".")[:-1] for f in os.listdir() if not f.startswith("_")]  # type: ignore
+__all__ = ["battery", "clock"]

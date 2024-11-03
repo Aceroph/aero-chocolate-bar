@@ -1,3 +1,5 @@
+#!/bin/python3
+
 from typing import Any, Dict
 import gi
 from ctypes import CDLL
@@ -20,8 +22,27 @@ class App(Gtk.Application):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config: Dict[str, Any]
-        config_path = next(Path(__file__).parent.glob("*.json"))
-        with open(config_path, "r") as file:
+
+        locations = [Path.home() / ".config" / "aero-chocolate-bar"]
+        self.style_file = config_file = None
+
+        for location in locations:
+            if gi.os.path.isdir(location):
+                # Search for json files in directory
+                if not config_file:
+                    try:
+                        config_file = next(location.glob("*.json"))
+                    except StopIteration:
+                        pass
+
+                # Search for css files in directory
+                if not self.style_file:
+                    try:
+                        self.style_file = next(location.glob("*.[s]?css"))
+                    except StopIteration:
+                        pass
+
+        with open(config_file or "config.json", "r") as file:
             self.config = json.load(file)
             file.close()
 
@@ -33,14 +54,12 @@ class App(Gtk.Application):
         del widget_import
         return widget
 
-    def load_css(self) -> None:
-        css_path = self.config.get("style", "style.css")
-        if css_path:
-            css_provider = Gtk.CssProvider()
-            css_provider.load_from_path(css_path)
-            Gtk.StyleContext.add_provider_for_display(
-                self.display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
-            )
+    def load_css(self, path: str | Path) -> None:
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_path(path)
+        Gtk.StyleContext.add_provider_for_display(
+            self.display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+        )
 
     def process_config(self) -> Gtk.CenterBox:
         bar_widgets = Gtk.CenterBox()
@@ -82,7 +101,12 @@ class App(Gtk.Application):
         bar_widget = self.process_config()
         window.set_child(bar_widget)
 
-        self.load_css()
+        self.load_css("style.css")
+
+        # Load user style
+        if self.style_file:
+            self.load_css(self.style_file)
+
         window.present()
 
 
