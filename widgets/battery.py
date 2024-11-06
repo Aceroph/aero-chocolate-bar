@@ -5,6 +5,7 @@ import psutil
 
 def setup(config: Dict[str, Any]) -> Gtk.Widget:
     widget = Gtk.Label()
+    widget.set_name("battery")
 
     # Initial call
     tick(widget, config)
@@ -19,10 +20,10 @@ def tick(widget: Gtk.Widget, config: Dict[str, Any]) -> bool:
     if battery.power_plugged:
         icon = config.get("icon-plugged", "")
     else:
-        icons: List[str] = config.get("icons", ["", "", "", "", ""])
+        icons: List[str] = config.get("icons", [" ", " ", " ", " ", " "])
         icon = icons[int(len(icons) * battery.percent / 100) - 1]
 
-    format = config.get("format", "{icon} ")
+    format = config.get("format", "{icon}")
     tooltip_format = config.get("tooltip_format", "{percentage} %")
 
     variables = {"icon": icon, "percentage": f"{min(100, battery.percent):.2f}"}

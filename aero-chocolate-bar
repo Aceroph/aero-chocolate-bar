@@ -10,6 +10,7 @@ CDLL("libgtk4-layer-shell.so")
 
 try:
     gi.require_version("Gtk", "4.0")
+    gi.require_version("GdkWayland", "4.0")
     gi.require_version("Gtk4LayerShell", "1.0")
     from gi.repository import Gtk, Gdk  # type: ignore
     from gi.repository import Gtk4LayerShell as LayerShell  # type: ignore
@@ -23,10 +24,16 @@ class App(Gtk.Application):
         super().__init__(*args, **kwargs)
         self.config: Dict[str, Any]
 
-        locations = [Path.home() / ".config" / "aero-chocolate-bar"]
+        locations = [
+            Path.home() / ".config",
+            Path("/") / "etc",
+            Path("/") / "etc" / "local",
+        ]
         self.style_file = config_file = None
 
         for location in locations:
+            location /= "aero-chocolate-bar"
+
             if gi.os.path.isdir(location):
                 # Search for json files in directory
                 if not config_file:
@@ -38,13 +45,21 @@ class App(Gtk.Application):
                 # Search for css files in directory
                 if not self.style_file:
                     try:
-                        self.style_file = next(location.glob("*.[s]?css"))
+                        self.style_file = next(location.glob("*.css"))
                     except StopIteration:
                         pass
 
-        with open(config_file or "config.json", "r") as file:
-            self.config = json.load(file)
-            file.close()
+        if config_file:
+            with open(config_file, "r") as file:
+                self.config = json.load(file)
+                file.close()
+        else:
+            # Default config
+            self.config = {
+                "left": {"workspaces": {}},
+                "center": {"clock": {}},
+                "right": {"battery": {}},
+            }
 
         self.display = Gdk.Display.get_default()
 
@@ -73,6 +88,7 @@ class App(Gtk.Application):
                 for widget_name, widget_config in widgets.items():
                     widget = self.get_widget(widget_name, widget_config)
                     widget.add_css_class("widget")
+                    widget.set_vexpand(False)
 
                     sections[position.lower()].append(widget)
 
@@ -86,12 +102,12 @@ class App(Gtk.Application):
 
         return bar_widgets
 
-    def on_activate(self, _):
+    def on_activate(self, _) -> None:
         monitor = self.display.get_monitors()[0]
         width = monitor.get_geometry().width
 
         window = Gtk.ApplicationWindow(application=app)
-        window.set_default_size(width, 32)
+        window.set_default_size(width, 12)
 
         LayerShell.init_for_window(window)
         LayerShell.set_layer(window, LayerShell.Layer.TOP)
@@ -99,13 +115,12 @@ class App(Gtk.Application):
         LayerShell.auto_exclusive_zone_enable(window)
 
         bar_widget = self.process_config()
-        window.set_child(bar_widget)
 
-        self.load_css("style.css")
+        window.set_child(bar_widget)
 
         # Load user style
         if self.style_file:
-            self.load_css(self.style_file)
+            self.load_css(str(self.style_file))
 
         window.present()
 

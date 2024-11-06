@@ -5,6 +5,7 @@ from gi.repository import Gtk, GLib  # type: ignore
 
 def setup(config: Dict[str, Any]) -> Gtk.Widget:
     widget = Gtk.MenuButton()
+    widget.set_name("clock")
 
     # Initial call
     tick(widget, config)

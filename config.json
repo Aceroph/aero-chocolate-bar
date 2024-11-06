@@ -1,7 +1,0 @@
-{
-  "left": {},
-  "center": { "clock": {} },
-  "right": {
-    "battery": { "interval": 1 }
-  }
-}
